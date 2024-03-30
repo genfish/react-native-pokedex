@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native";
-import { getPokemonsApi, getPokemonDetailsByUrlApi } from "../api/pokemon";
-import PokemonList from "../components/PokemonList";
+import React, { useState, useEffect} from 'react';
+import { SafeAreaView } from 'react-native';
+
+import { getPokemonsApi, getPokemonDetailsByUrlApi } from '../api/pokemon';
+
+import PokemonList from '../components/PokemonList';
 
 export default function Pokedex() {
   const [pokemons, setPokemons] = useState([]);
@@ -10,7 +12,7 @@ export default function Pokedex() {
   useEffect(() => {
     (async () => {
       await loadPokemons();
-    })();
+    })()
   }, []);
 
   const loadPokemons = async () => {
@@ -18,19 +20,22 @@ export default function Pokedex() {
       const response = await getPokemonsApi(nextUrl);
       setNextUrl(response.next);
 
-      const pokemonsArray = [];
-      for await (const pokemon of response.results) {
-        const pokemonDetails = await getPokemonDetailsByUrlApi(pokemon.url);
+      const pokemonsArray = await Promise.all(
+        response.results.map(async (pokemon) => {
+          const pokemonDetails = await getPokemonDetailsByUrlApi(pokemon.url);
 
-        pokemonsArray.push({
-          id: pokemonDetails.id,
-          name: pokemonDetails.name,
-          type: pokemonDetails.types[0].type.name,
-          order: pokemonDetails.order,
-          image: pokemonDetails.sprites.other["official-artwork"].front_default,
-        });
-      }
-
+          return {
+            id: pokemonDetails.id,
+            name: pokemonDetails.name,
+            types: [
+              pokemonDetails.types[0].type.name,
+              pokemonDetails.types.length > 1 ? pokemonDetails.types[1].type.name : null
+            ],
+            order: pokemonDetails.order,
+            image: pokemonDetails.sprites.other["official-artwork"].front_default,
+          };
+        })
+      );
       setPokemons([...pokemons, ...pokemonsArray]);
     } catch (error) {
       console.error(error);
@@ -39,10 +44,10 @@ export default function Pokedex() {
 
   return (
     <SafeAreaView>
-      <PokemonList
-        pokemons={pokemons}
-        loadPokemons={loadPokemons}
-        isNext={nextUrl}
+      <PokemonList 
+        pokemons={pokemons} 
+        loadPokemons={loadPokemons} 
+        isNext={nextUrl} 
       />
     </SafeAreaView>
   );
